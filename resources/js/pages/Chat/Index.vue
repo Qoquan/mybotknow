@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { router } from '@inertiajs/vue3'
 import { ref } from 'vue'
+import { router } from '@inertiajs/vue3'
 import AppLayout from '@/layouts/AppLayout.vue'
 
 interface Conversation {
@@ -24,6 +24,7 @@ const props = defineProps<{
 
 const selectedModel = ref(props.models[0]?.id ?? 'openai/gpt-4o-mini')
 const isCreating = ref(false)
+const showDeleteSuccess = ref(false)
 
 function createConversation() {
     isCreating.value = true
@@ -42,8 +43,13 @@ function createConversation() {
 function deleteConversation(id: number, e: Event) {
     e.preventDefault()
     e.stopPropagation()
+    if (!confirm('Supprimer cette conversation ?')) return
+
     router.delete(`/conversations/${id}`, {
-        preserveScroll: true,
+        onSuccess: () => {
+            showDeleteSuccess.value = true
+            setTimeout(() => showDeleteSuccess.value = false, 3000)
+        },
     })
 }
 
@@ -147,6 +153,20 @@ function formatDate(date: string) {
                     </button>
                 </div>
             </main>
+
+            <!-- Toast succès suppression -->
+            <div
+                v-if="showDeleteSuccess"
+                class="fixed bottom-6 right-6 bg-green-600 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-3 z-50"
+            >
+                <span>✅ Conversation supprimée</span>
+                <button
+                    @click="showDeleteSuccess = false"
+                    class="text-white hover:text-green-200 text-lg leading-none"
+                >
+                    &times;
+                </button>
+            </div>
 
         </div>
     </AppLayout>

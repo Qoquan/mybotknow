@@ -72,11 +72,9 @@ class ConversationController extends Controller
     }
 
     public function destroy(Conversation $conversation)
-    {
-        $this->authorize('delete', $conversation);
-
-        $conversation->delete();
-
-        return response()->json(['success' => true]);
-    }
+{
+    $this->authorize('delete', $conversation);
+    $conversation->delete();
+    return redirect()->route('chat.index');
+}
 }

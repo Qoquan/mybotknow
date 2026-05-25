@@ -34,17 +34,22 @@ class User extends Authenticatable
         ];
     }
     public function conversations(): HasMany
-{
+    {
     return $this->hasMany(Conversation::class);
-}
+    }
 
-public function customInstruction(): HasOne
-{
-    return $this->hasOne(CustomInstruction::class);
-}
+    public function customInstruction(): HasOne
+    {
+        return $this->hasOne(CustomInstruction::class);
+    }
 
-public function modelUsages(): HasMany
-{
-    return $this->hasMany(UserModelUsage::class);
-}
+    public function modelUsages(): HasMany
+    {
+        return $this->hasMany(UserModelUsage::class);
+    }
+
+    public function agents(): HasMany
+    {
+        return $this->hasMany(Agent::class);
+    }
 }

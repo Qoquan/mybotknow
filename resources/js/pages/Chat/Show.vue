@@ -48,6 +48,7 @@ const isStreaming = ref(false)
 const streamingContent = ref('')
 const messagesContainer = ref<HTMLElement | null>(null)
 const conversationTitle = ref(props.conversation.title)
+const showDeleteSuccess = ref(false)
 
 async function scrollToBottom() {
     await nextTick()
@@ -158,9 +159,17 @@ async function sendMessage() {
 function deleteConversation(id: number, e: Event) {
     e.preventDefault()
     e.stopPropagation()
+    if (!confirm('Supprimer cette conversation ?')) return
+
     router.delete(`/conversations/${id}`, {
-        preserveScroll: true,
-        onSuccess: () => router.visit('/chat'),
+        onSuccess: () => {
+            if (id === props.conversation.id) {
+                router.visit('/chat')
+            } else {
+                showDeleteSuccess.value = true
+                setTimeout(() => showDeleteSuccess.value = false, 3000)
+            }
+        },
     })
 }
 
@@ -350,6 +359,21 @@ onMounted(() => {
                 </div>
 
             </main>
+
+            <!-- Toast succès suppression -->
+            <div
+                v-if="showDeleteSuccess"
+                class="fixed bottom-6 right-6 bg-green-600 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-3 z-50"
+            >
+                <span>✅ Conversation supprimée</span>
+                <button
+                    @click="showDeleteSuccess = false"
+                    class="text-white hover:text-green-200 text-lg leading-none"
+                >
+                    &times;
+                </button>
+            </div>
+
         </div>
     </AppLayout>
 </template>

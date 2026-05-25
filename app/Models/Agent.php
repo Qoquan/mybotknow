@@ -6,18 +6,22 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Conversation extends Model
+class Agent extends Model
 {
     protected $fillable = [
         'user_id',
-        'agent_id',
-        'title',
+        'name',
+        'emoji',
+        'persona',
+        'context',
+        'response_style',
+        'language',
         'model',
-        'total_tokens',
+        'is_default',
     ];
 
     protected $casts = [
-        'total_tokens' => 'integer',
+        'is_default' => 'boolean',
     ];
 
     public function user(): BelongsTo
@@ -25,13 +29,8 @@ class Conversation extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function messages(): HasMany
+    public function conversations(): HasMany
     {
-        return $this->hasMany(Message::class);
-    }
-
-    public function agent(): BelongsTo
-    {
-        return $this->belongsTo(Agent::class);
+        return $this->hasMany(Conversation::class);
     }
 }
