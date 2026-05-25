@@ -105,8 +105,6 @@ function startChatWithAgent(agent: Agent) {
     router.post('/conversations', {
         model:    agent.model,
         agent_id: agent.id,
-    }, {
-        onSuccess: () => router.visit('/chat'),
     })
 }
 </script>

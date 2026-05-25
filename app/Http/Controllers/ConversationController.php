@@ -28,18 +28,19 @@ class ConversationController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $request->validate([
-            'model' => 'required|string',
-        ]);
+{
+    $request->validate([
+        'model' => 'required|string',
+    ]);
 
-        $conversation = $request->user()->conversations()->create([
-            'title' => 'Nouvelle conversation',
-            'model' => $request->model,
-        ]);
+    $conversation = $request->user()->conversations()->create([
+        'title' => 'Nouvelle conversation',
+        'model' => $request->model,
+        'agent_id' => $request->agent_id ?? null,
+    ]);
 
-        return response()->json($conversation);
-    }
+    return redirect()->route('conversations.show', $conversation);
+}
 
     public function show(Request $request, Conversation $conversation): Response
     {
@@ -72,9 +73,9 @@ class ConversationController extends Controller
     }
 
     public function destroy(Conversation $conversation)
-{
-    $this->authorize('delete', $conversation);
-    $conversation->delete();
-    return redirect()->route('chat.index');
-}
+    {
+        $this->authorize('delete', $conversation);
+        $conversation->delete();
+        return redirect()->route('chat.index');
+    }
 }
