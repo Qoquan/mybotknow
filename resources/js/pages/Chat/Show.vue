@@ -2,6 +2,9 @@
 import { ref, nextTick, onMounted } from 'vue'
 import { router } from '@inertiajs/vue3'
 import AppLayout from '@/layouts/AppLayout.vue'
+import { useMarkdown } from '@/composables/useMarkdown'
+
+const { renderMarkdown } = useMarkdown()
 
 interface Message {
     id: number
@@ -86,70 +89,70 @@ async function sendMessage() {
     isStreaming.value = true
     streamingContent.value = ''
 
-   try {
-    const response = await fetch(`/conversations/${props.conversation.id}/messages`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': getCsrfToken(),
-            'Accept': 'text/event-stream',
-        },
-        body: JSON.stringify({ content: userContent }),
-    })
+    try {
+        const response = await fetch(`/conversations/${props.conversation.id}/messages`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': getCsrfToken(),
+                'Accept': 'text/event-stream',
+            },
+            body: JSON.stringify({ content: userContent }),
+        })
 
-    const reader = response.body!.getReader()
-    const decoder = new TextDecoder()
-    let buffer = ''
+        const reader = response.body!.getReader()
+        const decoder = new TextDecoder()
+        let buffer = ''
 
-    while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
+        while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
 
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split('\n')
-        buffer = lines.pop() ?? ''
+            buffer += decoder.decode(value, { stream: true })
+            const lines = buffer.split('\n')
+            buffer = lines.pop() ?? ''
 
-        for (const line of lines) {
-            if (!line.startsWith('data: ')) continue
+            for (const line of lines) {
+                if (!line.startsWith('data: ')) continue
 
-            const jsonStr = line.slice(6).trim()
-            if (!jsonStr) continue
+                const jsonStr = line.slice(6).trim()
+                if (!jsonStr) continue
 
-            try {
-                const data = JSON.parse(jsonStr)
+                try {
+                    const data = JSON.parse(jsonStr)
 
-                if (data.done) {
-                    const savedContent = streamingContent.value
+                    if (data.done) {
+                        const savedContent = streamingContent.value
 
-                    messages.value.push({
-                        id: data.message_id,
-                        role: 'assistant',
-                        content: savedContent,
-                        created_at: new Date().toISOString(),
-                    })
+                        messages.value.push({
+                            id: data.message_id,
+                            role: 'assistant',
+                            content: savedContent,
+                            created_at: new Date().toISOString(),
+                        })
 
-                    if (data.title) {
-                        conversationTitle.value = data.title
+                        if (data.title) {
+                            conversationTitle.value = data.title
+                        }
+
+                        streamingContent.value = ''
+                        isStreaming.value = false
+                        await scrollToBottom()
+
+                    } else if (data.content) {
+                        streamingContent.value += data.content
+                        await scrollToBottom()
                     }
-
-                    streamingContent.value = ''
-                    isStreaming.value = false
-                    await scrollToBottom()
-
-                } else if (data.content) {
-                    streamingContent.value += data.content
-                    await scrollToBottom()
+                } catch {
+                    // ignorer les lignes non JSON
                 }
-            } catch {
-                // ignorer les lignes non JSON
             }
         }
+    } catch (error) {
+        console.error('Erreur streaming:', error)
+        isStreaming.value = false
+        streamingContent.value = ''
     }
-} catch (error) {
-    console.error('Erreur streaming:', error)
-    isStreaming.value = false
-    streamingContent.value = ''
-}
 }
 
 function deleteConversation(id: number, e: Event) {
@@ -186,6 +189,7 @@ onMounted(() => {
 
             <!-- Sidebar -->
             <aside class="w-72 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col shrink-0">
+
                 <div class="p-4 border-b border-gray-200 dark:border-gray-700">
                     <h1 class="text-xl font-bold text-gray-900 dark:text-white">
                         🤖 MyBotKnows
@@ -246,6 +250,7 @@ onMounted(() => {
                         </div>
                     </template>
                 </nav>
+
             </aside>
 
             <!-- Zone de chat -->
@@ -275,14 +280,26 @@ onMounted(() => {
                             class="flex flex-col"
                             :class="message.role === 'user' ? 'items-end' : 'items-start'"
                         >
+                            <!-- Message utilisateur -->
                             <div
-                                class="max-w-2xl rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap"
-                                :class="message.role === 'user'
-                                    ? 'bg-blue-600 text-white rounded-br-sm'
-                                    : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-bl-sm'"
+                                v-if="message.role === 'user'"
+                                class="max-w-2xl rounded-2xl rounded-br-sm px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap bg-blue-600 text-white"
                             >
                                 {{ message.content }}
                             </div>
+
+                            <!-- Message assistant avec Markdown -->
+                            <div
+                                v-else
+                                class="max-w-2xl rounded-2xl rounded-bl-sm px-4 py-3 text-sm leading-relaxed bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700"
+                            >
+                                <div
+                                    v-html="renderMarkdown(message.content)"
+                                    class="prose prose-sm dark:prose-invert max-w-none"
+                                />
+                            </div>
+
+                            <!-- Tokens -->
                             <span
                                 v-if="message.role === 'assistant' && message.tokens_used"
                                 class="text-xs text-gray-400 mt-1 px-1"
@@ -294,8 +311,12 @@ onMounted(() => {
 
                     <!-- Message en streaming -->
                     <div v-if="isStreaming" class="flex justify-start">
-                        <div class="max-w-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-bl-sm px-4 py-3 text-sm leading-relaxed text-gray-900 dark:text-white whitespace-pre-wrap">
-                            <span v-if="streamingContent">{{ streamingContent }}</span>
+                        <div class="max-w-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-bl-sm px-4 py-3 text-sm leading-relaxed text-gray-900 dark:text-white">
+                            <div
+                                v-if="streamingContent"
+                                v-html="renderMarkdown(streamingContent)"
+                                class="prose prose-sm dark:prose-invert max-w-none"
+                            />
                             <span v-else class="flex gap-1 items-center">
                                 <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0ms"></span>
                                 <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 150ms"></span>
@@ -303,6 +324,7 @@ onMounted(() => {
                             </span>
                         </div>
                     </div>
+
                 </div>
 
                 <!-- Input -->

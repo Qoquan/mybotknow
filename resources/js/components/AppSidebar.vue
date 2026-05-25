@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, FolderGit2, MessageSquare } from 'lucide-vue-next';
+import { BookOpen, FolderGit2, MessageSquare, Moon, Settings, Sun, User } from 'lucide-vue-next';
 import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -14,13 +14,30 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { useAppearance } from '@/composables/useAppearance'
 import type { NavItem } from '@/types';
+
+const { appearance, updateAppearance } = useAppearance()
+
+function toggleDark() {
+    updateAppearance(appearance.value === 'dark' ? 'light' : 'dark')
+}
 
 const mainNavItems: NavItem[] = [
     {
         title: 'MyBotKnows',
         href: '/chat',
         icon: MessageSquare,
+    },
+    {
+        title: 'Instructions',
+        href: '/instructions',
+        icon: Settings,
+    },
+    {
+        title: 'Mon profil',
+        href: '/settings/profile',
+        icon: User,
     },
 ];
 
@@ -42,6 +59,7 @@ const footerNavItems: NavItem[] = [
     <Sidebar collapsible="icon" variant="inset">
         <SidebarHeader>
             <SidebarMenu>
+                <!-- Logo -->
                 <SidebarMenuItem>
                     <SidebarMenuButton size="lg" as-child>
                         <Link href="/chat">
@@ -57,6 +75,20 @@ const footerNavItems: NavItem[] = [
         </SidebarContent>
 
         <SidebarFooter>
+            <!-- Bouton dark mode -->
+            <SidebarMenu>
+                <SidebarMenuItem>
+                    <SidebarMenuButton
+                        @click="toggleDark"
+                        class="cursor-pointer"
+                    >
+                        <Moon v-if="appearance !== 'dark'" class="h-4 w-4" />
+                        <Sun v-else class="h-4 w-4" />
+                        <span>{{ appearance === 'dark' ? 'Mode clair' : 'Mode sombre' }}</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+            </SidebarMenu>
+
             <NavFooter :items="footerNavItems" />
             <NavUser />
         </SidebarFooter>
