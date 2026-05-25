@@ -1,0 +1,96 @@
+@startuml MyBotKnows
+
+hide methods
+hide stereotypes
+hide circle
+
+skinparam linetype ortho
+skinparam classBorderColor #888888
+skinparam classBackgroundColor #FFFFFF
+skinparam classArrowColor #444444
+skinparam classFontSize 13
+skinparam classFontName Arial
+skinparam classAttributeFontSize 12
+skinparam ArrowFontSize 11
+skinparam ArrowFontColor #444444
+skinparam padding 5
+
+class users {
+    id : bigint
+    --
+    name : varchar(255)
+    email : varchar(255)
+    email_verified_at : timestamp
+    password : varchar(255)
+    remember_token : varchar(100)
+    created_at : timestamp
+    updated_at : timestamp
+}
+
+class conversations {
+    id : bigint
+    user_id : bigint
+    --
+    title : varchar(255)
+    model : varchar(100)
+    total_tokens : integer
+    created_at : timestamp
+    updated_at : timestamp
+}
+
+class messages {
+    id : bigint
+    conversation_id : bigint
+    --
+    role : enum
+    content : longtext
+    model_used : varchar(100)
+    tokens_used : integer
+    created_at : timestamp
+    updated_at : timestamp
+}
+
+class custom_instructions {
+    id : bigint
+    user_id : bigint
+    --
+    persona : text
+    context : text
+    response_style : text
+    language : varchar(10)
+    is_active : boolean
+    created_at : timestamp
+    updated_at : timestamp
+}
+
+class message_files {
+    id : bigint
+    message_id : bigint
+    --
+    filename : varchar(255)
+    path : varchar(255)
+    mime_type : varchar(100)
+    type : enum
+    created_at : timestamp
+    updated_at : timestamp
+}
+
+class user_model_usage {
+    id : bigint
+    user_id : bigint
+    --
+    model : varchar(100)
+    total_messages : integer
+    total_tokens : integer
+    usage_date : date
+    created_at : timestamp
+    updated_at : timestamp
+}
+
+users "1" --> "0..*" conversations : possède >
+users "1" --> "1" custom_instructions : configure >
+users "1" --> "0..*" user_model_usage : utilise >
+conversations "1" --> "0..*" messages : contient >
+messages "1" --> "0..*" message_files : attache >
+
+@enduml
