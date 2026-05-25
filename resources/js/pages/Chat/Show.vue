@@ -7,6 +7,7 @@ interface Message {
     id: number
     role: 'user' | 'assistant'
     content: string
+    tokens_used?: number
     created_at: string
 }
 
@@ -85,66 +86,70 @@ async function sendMessage() {
     isStreaming.value = true
     streamingContent.value = ''
 
-    try {
-        const response = await fetch(`/conversations/${props.conversation.id}/messages`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': getCsrfToken(),
-                'Accept': 'text/event-stream',
-            },
-            body: JSON.stringify({ content: userContent }),
-        })
+   try {
+    const response = await fetch(`/conversations/${props.conversation.id}/messages`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': getCsrfToken(),
+            'Accept': 'text/event-stream',
+        },
+        body: JSON.stringify({ content: userContent }),
+    })
 
-        const reader = response.body!.getReader()
-        const decoder = new TextDecoder()
-        let buffer = ''
+    const reader = response.body!.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
 
-        while (true) {
-            const { done, value } = await reader.read()
-            if (done) break
+    while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
 
-            buffer += decoder.decode(value, { stream: true })
-            const lines = buffer.split('\n')
-            buffer = lines.pop() ?? ''
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() ?? ''
 
-            for (const line of lines) {
-                if (!line.startsWith('data: ')) continue
+        for (const line of lines) {
+            if (!line.startsWith('data: ')) continue
 
-                const jsonStr = line.slice(6).trim()
-                if (!jsonStr) continue
+            const jsonStr = line.slice(6).trim()
+            if (!jsonStr) continue
 
-                try {
-                    const data = JSON.parse(jsonStr)
+            try {
+                const data = JSON.parse(jsonStr)
 
-                    if (data.done) {
-                        messages.value.push({
-                            id: data.message_id,
-                            role: 'assistant',
-                            content: streamingContent.value,
-                            created_at: new Date().toISOString(),
-                        })
-                        streamingContent.value = ''
+                if (data.done) {
+                    const savedContent = streamingContent.value
 
-                        if (data.title) {
-                            conversationTitle.value = data.title
-                        }
-                    } else if (data.content) {
-                        streamingContent.value += data.content
-                        await scrollToBottom()
+                    messages.value.push({
+                        id: data.message_id,
+                        role: 'assistant',
+                        content: savedContent,
+                        created_at: new Date().toISOString(),
+                    })
+
+                    if (data.title) {
+                        conversationTitle.value = data.title
                     }
-                } catch {
-                    // ignorer les lignes non JSON
+
+                    streamingContent.value = ''
+                    isStreaming.value = false
+                    await scrollToBottom()
+
+                } else if (data.content) {
+                    streamingContent.value += data.content
+                    await scrollToBottom()
                 }
+            } catch {
+                // ignorer les lignes non JSON
             }
         }
-    } catch (error) {
-        console.error('Erreur streaming:', error)
-        streamingContent.value = 'Une erreur est survenue.'
-    } finally {
-        isStreaming.value = false
-        await scrollToBottom()
     }
+} catch (error) {
+    console.error('Erreur streaming:', error)
+    isStreaming.value = false
+    streamingContent.value = ''
+}
 }
 
 function deleteConversation(id: number, e: Event) {
@@ -267,8 +272,8 @@ onMounted(() => {
 
                     <template v-for="message in messages" :key="message.id">
                         <div
-                            class="flex"
-                            :class="message.role === 'user' ? 'justify-end' : 'justify-start'"
+                            class="flex flex-col"
+                            :class="message.role === 'user' ? 'items-end' : 'items-start'"
                         >
                             <div
                                 class="max-w-2xl rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap"
@@ -278,6 +283,12 @@ onMounted(() => {
                             >
                                 {{ message.content }}
                             </div>
+                            <span
+                                v-if="message.role === 'assistant' && message.tokens_used"
+                                class="text-xs text-gray-400 mt-1 px-1"
+                            >
+                                {{ message.tokens_used }} tokens
+                            </span>
                         </div>
                     </template>
 
