@@ -1,8 +1,8 @@
 import type { ComputedRef, Ref } from 'vue';
 import { computed, onMounted, ref } from 'vue';
-import type { Appearance, ResolvedAppearance } from '@/types';
 
-export type { Appearance, ResolvedAppearance };
+export type Appearance = 'light' | 'dark' | 'epic' | 'system';
+export type ResolvedAppearance = 'light' | 'dark' | 'epic';
 
 export type UseAppearanceReturn = {
     appearance: Ref<Appearance>;
@@ -11,75 +11,51 @@ export type UseAppearanceReturn = {
 };
 
 export function updateTheme(value: Appearance): void {
-    if (typeof window === 'undefined') {
-        return;
-    }
+    if (typeof window === 'undefined') return;
 
-    if (value === 'system') {
-        const mediaQueryList = window.matchMedia(
-            '(prefers-color-scheme: dark)',
-        );
-        const systemTheme = mediaQueryList.matches ? 'dark' : 'light';
+    const root = document.documentElement;
+    root.classList.remove('dark', 'epic');
 
-        document.documentElement.classList.toggle(
-            'dark',
-            systemTheme === 'dark',
-        );
-    } else {
-        document.documentElement.classList.toggle('dark', value === 'dark');
+    if (value === 'dark') {
+        root.classList.add('dark');
+    } else if (value === 'epic') {
+        root.classList.add('epic');
+    } else if (value === 'system') {
+        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (systemDark) root.classList.add('dark');
     }
 }
 
 const setCookie = (name: string, value: string, days = 365) => {
-    if (typeof document === 'undefined') {
-        return;
-    }
-
+    if (typeof document === 'undefined') return;
     const maxAge = days * 24 * 60 * 60;
-
     document.cookie = `${name}=${value};path=/;max-age=${maxAge};SameSite=Lax`;
 };
 
 const mediaQuery = () => {
-    if (typeof window === 'undefined') {
-        return null;
-    }
-
+    if (typeof window === 'undefined') return null;
     return window.matchMedia('(prefers-color-scheme: dark)');
 };
 
-const getStoredAppearance = () => {
-    if (typeof window === 'undefined') {
-        return null;
-    }
-
+const getStoredAppearance = (): Appearance | null => {
+    if (typeof window === 'undefined') return null;
     return localStorage.getItem('appearance') as Appearance | null;
 };
 
 const prefersDark = (): boolean => {
-    if (typeof window === 'undefined') {
-        return false;
-    }
-
+    if (typeof window === 'undefined') return false;
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
 };
 
 const handleSystemThemeChange = () => {
     const currentAppearance = getStoredAppearance();
-
     updateTheme(currentAppearance || 'system');
 };
 
 export function initializeTheme(): void {
-    if (typeof window === 'undefined') {
-        return;
-    }
-
-    // Initialize theme from saved preference or default to system...
+    if (typeof window === 'undefined') return;
     const savedAppearance = getStoredAppearance();
     updateTheme(savedAppearance || 'system');
-
-    // Set up system theme change listener...
     mediaQuery()?.addEventListener('change', handleSystemThemeChange);
 }
 
@@ -87,10 +63,7 @@ const appearance = ref<Appearance>('system');
 
 export function useAppearance(): UseAppearanceReturn {
     onMounted(() => {
-        const savedAppearance = localStorage.getItem(
-            'appearance',
-        ) as Appearance | null;
-
+        const savedAppearance = getStoredAppearance();
         if (savedAppearance) {
             appearance.value = savedAppearance;
         }
@@ -100,19 +73,13 @@ export function useAppearance(): UseAppearanceReturn {
         if (appearance.value === 'system') {
             return prefersDark() ? 'dark' : 'light';
         }
-
-        return appearance.value;
+        return appearance.value as ResolvedAppearance;
     });
 
     function updateAppearance(value: Appearance) {
         appearance.value = value;
-
-        // Store in localStorage for client-side persistence...
         localStorage.setItem('appearance', value);
-
-        // Store in cookie for SSR...
         setCookie('appearance', value);
-
         updateTheme(value);
     }
 

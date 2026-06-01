@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Bot, FolderGit2, MessageSquare, Moon, Settings, Sun, User } from 'lucide-vue-next';
+import { computed } from 'vue'
+import { Bot, BookOpen, FolderGit2, MessageSquare, Settings, User } from 'lucide-vue-next';
 import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -19,13 +20,27 @@ import type { NavItem } from '@/types';
 
 const { appearance, updateAppearance } = useAppearance()
 
-function toggleDark() {
-    updateAppearance(appearance.value === 'dark' ? 'light' : 'dark')
+const themeIcon = computed(() => {
+    if (appearance.value === 'dark') return '🌙'
+    if (appearance.value === 'epic') return '⚔️'
+    return '☀️'
+})
+
+const themeLabel = computed(() => {
+    if (appearance.value === 'dark') return 'Donjon (Sombre)'
+    if (appearance.value === 'epic') return 'Épique (Or)'
+    return 'Lumière (Clair)'
+})
+
+function cycleTheme() {
+    if (appearance.value === 'light' || appearance.value === 'system') updateAppearance('dark')
+    else if (appearance.value === 'dark') updateAppearance('epic')
+    else updateAppearance('light')
 }
 
 const mainNavItems: NavItem[] = [
     {
-        title: 'MyBotKnows',
+        title: 'Quêtes',
         href: '/chat',
         icon: MessageSquare,
     },
@@ -40,7 +55,7 @@ const mainNavItems: NavItem[] = [
         icon: Settings,
     },
     {
-        title: 'Mon profil',
+        title: 'Mon Héros',
         href: '/settings/profile',
         icon: User,
     },
@@ -48,7 +63,7 @@ const mainNavItems: NavItem[] = [
 
 const footerNavItems: NavItem[] = [
     {
-        title: 'Repository',
+        title: 'GitHub',
         href: 'https://github.com/laravel/vue-starter-kit',
         icon: FolderGit2,
     },
@@ -66,8 +81,12 @@ const footerNavItems: NavItem[] = [
             <SidebarMenu>
                 <SidebarMenuItem>
                     <SidebarMenuButton size="lg" as-child>
-                        <Link href="/chat">
-                            <AppLogo />
+                        <Link href="/chat" class="flex items-center gap-2">
+                            <span class="text-2xl">🎲</span>
+                            <div class="flex flex-col leading-tight">
+                                <span class="font-bold text-sm">QuestMaster</span>
+                                <span class="text-xs opacity-60">Ton Maître de Jeu IA</span>
+                            </div>
                         </Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -81,10 +100,12 @@ const footerNavItems: NavItem[] = [
         <SidebarFooter>
             <SidebarMenu>
                 <SidebarMenuItem>
-                    <SidebarMenuButton @click="toggleDark" class="cursor-pointer">
-                        <Moon v-if="appearance !== 'dark'" class="h-4 w-4" />
-                        <Sun v-else class="h-4 w-4" />
-                        <span>{{ appearance === 'dark' ? 'Mode clair' : 'Mode sombre' }}</span>
+                    <SidebarMenuButton
+                        @click="cycleTheme"
+                        class="cursor-pointer"
+                    >
+                        <span class="text-base">{{ themeIcon }}</span>
+                        <span>{{ themeLabel }}</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
             </SidebarMenu>
@@ -92,5 +113,5 @@ const footerNavItems: NavItem[] = [
             <NavUser />
         </SidebarFooter>
     </Sidebar>
-    <slot />
+
 </template>

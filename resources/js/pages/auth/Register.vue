@@ -16,31 +16,44 @@ defineProps<{
 
 defineOptions({
     layout: {
-        title: 'Créer un compte',
-        description: 'Crée ton compte MyBotKnows',
+        title: 'Créer un héros',
+        description: 'Rejoins QuestMaster',
     },
 });
 </script>
 
 <template>
-    <Head title="Inscription - MyBotKnows" />
+    <Head title="Créer un héros - QuestMaster" />
 
-    <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
-        <div class="w-full max-w-md">
+    <div class="min-h-screen bg-gradient-to-br from-gray-900 via-purple-950 to-gray-900 flex items-center justify-center p-4 relative overflow-hidden">
 
-            <!-- Logo & Titre -->
+        <!-- Décorations -->
+        <div class="absolute inset-0 pointer-events-none overflow-hidden">
+            <div class="absolute top-10 right-10 text-5xl opacity-10 animate-pulse">🏰</div>
+            <div class="absolute bottom-10 left-10 text-5xl opacity-10 animate-pulse" style="animation-delay:1s">🗡️</div>
+            <div class="absolute top-1/2 right-5 text-4xl opacity-10 animate-pulse" style="animation-delay:2s">🔮</div>
+            <div class="absolute top-1/3 left-5 text-4xl opacity-10 animate-pulse" style="animation-delay:0.5s">🎲</div>
+        </div>
+
+        <div class="w-full max-w-md relative z-10">
+
+            <!-- Logo -->
             <div class="text-center mb-8">
-                <div class="text-6xl mb-4">🤖</div>
-                <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-                    MyBotKnows
+                <div class="text-6xl mb-4">⚔️</div>
+                <h1 class="text-4xl font-bold text-white">
+                    Quest<span class="text-purple-400">Master</span>
                 </h1>
-                <p class="text-gray-500 dark:text-gray-400 mt-2">
-                    Crée ton compte pour accéder à ton assistant IA
+                <p class="text-purple-300 mt-2">
+                    🎲 Forge ton destin, crée ton héros
                 </p>
             </div>
 
             <!-- Card -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-8">
+            <div class="bg-gray-900/80 backdrop-blur rounded-2xl shadow-2xl border border-purple-900/50 p-8">
+
+                <h2 class="text-lg font-semibold text-white mb-6 text-center">
+                    🧙 Création de personnage
+                </h2>
 
                 <Form
                     v-bind="store.form()"
@@ -50,8 +63,8 @@ defineOptions({
                 >
                     <!-- Nom -->
                     <div class="grid gap-2">
-                        <Label for="name" class="text-gray-700 dark:text-gray-300 font-medium">
-                            Nom complet
+                        <Label for="name" class="text-purple-300 font-medium">
+                            Nom du héros
                         </Label>
                         <Input
                             id="name"
@@ -61,15 +74,15 @@ defineOptions({
                             :tabindex="1"
                             autocomplete="name"
                             name="name"
-                            placeholder="Jean Dupont"
-                            class="rounded-xl border-gray-300 dark:border-gray-600 focus:ring-blue-500"
+                            placeholder="Aragorn, Hermione..."
+                            class="bg-gray-800 border-purple-900 text-white placeholder-gray-600 focus:border-purple-500 rounded-xl"
                         />
                         <InputError :message="errors.name" />
                     </div>
 
                     <!-- Email -->
                     <div class="grid gap-2">
-                        <Label for="email" class="text-gray-700 dark:text-gray-300 font-medium">
+                        <Label for="email" class="text-purple-300 font-medium">
                             Adresse email
                         </Label>
                         <Input
@@ -79,16 +92,16 @@ defineOptions({
                             :tabindex="2"
                             autocomplete="email"
                             name="email"
-                            placeholder="toi@exemple.com"
-                            class="rounded-xl border-gray-300 dark:border-gray-600 focus:ring-blue-500"
+                            placeholder="héros@royaume.com"
+                            class="bg-gray-800 border-purple-900 text-white placeholder-gray-600 focus:border-purple-500 rounded-xl"
                         />
                         <InputError :message="errors.email" />
                     </div>
 
                     <!-- Mot de passe -->
                     <div class="grid gap-2">
-                        <Label for="password" class="text-gray-700 dark:text-gray-300 font-medium">
-                            Mot de passe
+                        <Label for="password" class="text-purple-300 font-medium">
+                            Mot de passe secret
                         </Label>
                         <PasswordInput
                             id="password"
@@ -98,14 +111,14 @@ defineOptions({
                             name="password"
                             placeholder="••••••••"
                             :passwordrules="passwordRules"
-                            class="rounded-xl border-gray-300 dark:border-gray-600 focus:ring-blue-500"
+                            class="bg-gray-800 border-purple-900 text-white rounded-xl"
                         />
                         <InputError :message="errors.password" />
                     </div>
 
-                    <!-- Confirmation mot de passe -->
+                    <!-- Confirmation -->
                     <div class="grid gap-2">
-                        <Label for="password_confirmation" class="text-gray-700 dark:text-gray-300 font-medium">
+                        <Label for="password_confirmation" class="text-purple-300 font-medium">
                             Confirmer le mot de passe
                         </Label>
                         <PasswordInput
@@ -116,29 +129,29 @@ defineOptions({
                             name="password_confirmation"
                             placeholder="••••••••"
                             :passwordrules="passwordRules"
-                            class="rounded-xl border-gray-300 dark:border-gray-600 focus:ring-blue-500"
+                            class="bg-gray-800 border-purple-900 text-white rounded-xl"
                         />
                         <InputError :message="errors.password_confirmation" />
                     </div>
 
-                    <!-- Bouton inscription -->
+                    <!-- Bouton -->
                     <Button
                         type="submit"
-                        class="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-3 font-medium mt-2"
+                        class="w-full bg-purple-600 hover:bg-purple-700 text-white rounded-xl py-3 font-bold mt-2 text-base"
                         tabindex="5"
                         :disabled="processing"
                         data-test="register-user-button"
                     >
                         <Spinner v-if="processing" class="mr-2" />
-                        {{ processing ? 'Création...' : 'Créer mon compte' }}
+                        {{ processing ? 'Création...' : '🎲 Commencer l\'aventure' }}
                     </Button>
 
                     <!-- Lien connexion -->
-                    <div class="text-center text-sm text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-700">
-                        Déjà un compte ?
+                    <div class="text-center text-sm text-gray-500 pt-2 border-t border-gray-800">
+                        Déjà un héros ?
                         <TextLink
                             :href="login()"
-                            class="text-blue-600 hover:text-blue-700 font-medium ml-1"
+                            class="text-purple-400 hover:text-purple-300 font-medium ml-1"
                             :tabindex="6"
                         >
                             Se connecter
@@ -147,9 +160,8 @@ defineOptions({
                 </Form>
             </div>
 
-            <!-- Footer -->
-            <p class="text-center text-xs text-gray-400 mt-6">
-                MyBotKnows — Propulsé par OpenRouter 🚀
+            <p class="text-center text-xs text-gray-600 mt-6">
+                QuestMaster — Propulsé par OpenRouter 🎲
             </p>
         </div>
     </div>

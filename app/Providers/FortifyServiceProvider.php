@@ -38,10 +38,14 @@ class FortifyServiceProvider extends ServiceProvider
      * Configure Fortify actions.
      */
     private function configureActions(): void
-    {
-        Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
-        Fortify::createUsersUsing(CreateNewUser::class);
-    }
+{
+    Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
+    Fortify::createUsersUsing(CreateNewUser::class);
+
+    Fortify::redirects('login', '/chat');
+    Fortify::redirects('register', '/chat');
+    Fortify::redirects('logout', '/');
+}
 
     /**
      * Configure Fortify views.

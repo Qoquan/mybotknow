@@ -73,8 +73,7 @@ return [
     |
     */
 
-    'home' => '/dashboard',
-
+    'home' => '/chat',
     /*
     |--------------------------------------------------------------------------
     | Fortify Routes Prefix / Subdomain
