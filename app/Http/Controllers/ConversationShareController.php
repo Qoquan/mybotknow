@@ -33,33 +33,41 @@ class ConversationShareController extends Controller
 
     // Inviter un utilisateur
     public function invite(Request $request, Conversation $conversation)
-    {
-        $this->authorize('update', $conversation);
+{
+    $this->authorize('update', $conversation);
 
-        $request->validate([
-            'email' => 'required|email|exists:users,email',
-        ]);
+    $request->validate([
+        'email' => 'required|email',
+    ]);
 
-        $user = User::where('email', $request->email)->first();
+    $email = $request->email;
+    $user = User::where('email', $email)->first();
 
-        // Vérifier que ce n'est pas le propriétaire
-        if ($user->id === $conversation->user_id) {
-            return back()->withErrors(['email' => 'Cet utilisateur est déjà le propriétaire.']);
-        }
-
-        // Vérifier qu'il n'est pas déjà membre
-        if ($conversation->isMember($user)) {
-            return back()->withErrors(['email' => 'Cet utilisateur est déjà membre.']);
-        }
-
-        $conversation->members()->attach($user->id, [
-            'role'      => 'member',
-            'joined_at' => now(),
-        ]);
-
-        return back()->with('success', "{$user->name} a été invité à la conversation !");
+    // Utilisateur non inscrit — envoyer un email d'invitation
+    if (!$user) {
+        \Mail::to($email)->send(
+            new \App\Mail\ConversationInvitation($conversation, $request->user(), $email)
+        );
+        return back()->with('success', "Un email d'invitation a été envoyé à {$email} !");
     }
 
+    // Vérifier que ce n'est pas le propriétaire
+    if ($user->id === $conversation->user_id) {
+        return back()->withErrors(['email' => 'Cet utilisateur est déjà le propriétaire.']);
+    }
+
+    // Vérifier qu'il n'est pas déjà membre
+    if ($conversation->isMember($user)) {
+        return back()->withErrors(['email' => 'Cet utilisateur est déjà membre.']);
+    }
+
+    $conversation->members()->attach($user->id, [
+        'role'      => 'member',
+        'joined_at' => now(),
+    ]);
+
+    return back()->with('success', "{$user->name} a été invité à la conversation !");
+}
     // Retirer un membre
     public function remove(Request $request, Conversation $conversation, User $user)
     {
