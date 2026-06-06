@@ -15,18 +15,23 @@ class ConversationController extends Controller
     ) {}
 
     public function index(Request $request): Response
-    {
-        $conversations = $request->user()
-            ->conversations()
-            ->orderByDesc('updated_at')
-            ->get(['id', 'title', 'model', 'updated_at']);
+{
+    $user = $request->user();
 
-        return Inertia::render('Chat/Index', [
-            'conversations' => $conversations,
-            'models'        => $this->openRouter->getAvailableModels(),
-        ]);
-    }
+    $conversations = $user->conversations()
+        ->orderByDesc('updated_at')
+        ->get(['id', 'title', 'model', 'updated_at', 'user_id']);
 
+    $sharedConversations = $user->sharedConversations()
+        ->orderByDesc('updated_at')
+        ->get(['conversations.id', 'conversations.title', 'conversations.model', 'conversations.updated_at', 'conversations.user_id']);
+
+    return Inertia::render('Chat/Index', [
+        'conversations'       => $conversations,
+        'sharedConversations' => $sharedConversations,
+        'models'              => $this->openRouter->getAvailableModels(),
+    ]);
+}
     public function store(Request $request)
 {
     $request->validate([
@@ -43,20 +48,28 @@ class ConversationController extends Controller
 }
 
     public function show(Request $request, Conversation $conversation): Response
-    {
-        $this->authorize('view', $conversation);
+{
+    $this->authorize('view', $conversation);
 
-        $conversation->load('messages.files');
+    $conversation->load('messages.files');
 
-        return Inertia::render('Chat/Show', [
-            'conversation'  => $conversation,
-            'conversations' => $request->user()
-                ->conversations()
-                ->orderByDesc('updated_at')
-                ->get(['id', 'title', 'model', 'updated_at']),
-            'models'        => $this->openRouter->getAvailableModels(),
-        ]);
-    }
+    $user = $request->user();
+
+    $conversations = $user->conversations()
+        ->orderByDesc('updated_at')
+        ->get(['id', 'title', 'model', 'updated_at', 'user_id']);
+
+    $sharedConversations = $user->sharedConversations()
+        ->orderByDesc('updated_at')
+        ->get(['conversations.id', 'conversations.title', 'conversations.model', 'conversations.updated_at', 'conversations.user_id']);
+
+    return Inertia::render('Chat/Show', [
+        'conversation'        => $conversation,
+        'conversations'       => $conversations,
+        'sharedConversations' => $sharedConversations,
+        'models'              => $this->openRouter->getAvailableModels(),
+    ]);
+}
 
     public function update(Request $request, Conversation $conversation)
     {

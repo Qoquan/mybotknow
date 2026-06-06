@@ -9,12 +9,14 @@ class ConversationPolicy
 {
     public function view(User $user, Conversation $conversation): bool
     {
-        return $user->id === $conversation->user_id;
+        return $user->id === $conversation->user_id
+            || $conversation->isMember($user);
     }
 
     public function update(User $user, Conversation $conversation): bool
     {
-        return $user->id === $conversation->user_id;
+        return $user->id === $conversation->user_id
+            || $conversation->isMember($user);
     }
 
     public function delete(User $user, Conversation $conversation): bool

@@ -5,23 +5,23 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class UserModelUsage extends Model
+class ConversationMember extends Model
 {
-    protected $table = 'user_model_usage';
-
     protected $fillable = [
+        'conversation_id',
         'user_id',
-        'model',
-        'total_messages',
-        'total_tokens',
-        'usage_date',
+        'role',
+        'joined_at',
     ];
 
     protected $casts = [
-        'total_messages' => 'integer',
-        'total_tokens'   => 'integer',
-        'usage_date'     => 'date',
+        'joined_at' => 'datetime',
     ];
+
+    public function conversation(): BelongsTo
+    {
+        return $this->belongsTo(Conversation::class);
+    }
 
     public function user(): BelongsTo
     {

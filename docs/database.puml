@@ -1,4 +1,4 @@
-@startuml MyBotKnows
+@startuml MyBotKnows - QuestMaster Database Schema
 
 hide methods
 hide stereotypes
@@ -14,83 +14,108 @@ skinparam classAttributeFontSize 12
 skinparam ArrowFontSize 11
 skinparam ArrowFontColor #444444
 skinparam padding 5
+skinparam classHeaderBackgroundColor #6B21A8
+skinparam classFontColor #FFFFFF
 
-class users {
-    id : bigint
-    --
-    name : varchar(255)
-    email : varchar(255)
-    email_verified_at : timestamp
-    password : varchar(255)
-    remember_token : varchar(100)
-    created_at : timestamp
-    updated_at : timestamp
+class User {
+  id : bigint
+  --
+  name : varchar(255)
+  email : varchar(255)
+  email_verified_at : timestamp
+  password : varchar(255)
+  two_factor_secret : text
+  two_factor_recovery_codes : text
+  remember_token : varchar(100)
+  created_at : timestamp
+  updated_at : timestamp
 }
 
-class conversations {
-    id : bigint
-    user_id : bigint
-    --
-    title : varchar(255)
-    model : varchar(100)
-    total_tokens : integer
-    created_at : timestamp
-    updated_at : timestamp
+class Conversation {
+  id : bigint
+  user_id : bigint
+  agent_id : bigint NULL
+  --
+  title : varchar(255)
+  model : varchar(100)
+  total_tokens : integer
+  created_at : timestamp
+  updated_at : timestamp
 }
 
-class messages {
-    id : bigint
-    conversation_id : bigint
-    --
-    role : enum
-    content : longtext
-    model_used : varchar(100)
-    tokens_used : integer
-    created_at : timestamp
-    updated_at : timestamp
+class Message {
+  id : bigint
+  conversation_id : bigint
+  --
+  role : enum('user','assistant')
+  content : longtext
+  model_used : varchar(100)
+  tokens_used : integer
+  created_at : timestamp
+  updated_at : timestamp
 }
 
-class custom_instructions {
-    id : bigint
-    user_id : bigint
-    --
-    persona : text
-    context : text
-    response_style : text
-    language : varchar(10)
-    is_active : boolean
-    created_at : timestamp
-    updated_at : timestamp
+class Custom_instruction {
+  id : bigint
+  user_id : bigint
+  --
+  persona : text
+  context : text
+  response_style : text
+  language : varchar(10)
+  is_active : boolean
+  created_at : timestamp
+  updated_at : timestamp
 }
 
-class message_files {
-    id : bigint
-    message_id : bigint
-    --
-    filename : varchar(255)
-    path : varchar(255)
-    mime_type : varchar(100)
-    type : enum
-    created_at : timestamp
-    updated_at : timestamp
+class Agent {
+  id : bigint
+  user_id : bigint
+  --
+  name : varchar(255)
+  emoji : varchar(10)
+  persona : text
+  context : text
+  response_style : text
+  language : varchar(10)
+  model : varchar(100)
+  is_default : boolean
+  created_at : timestamp
+  updated_at : timestamp
 }
 
-class user_model_usage {
-    id : bigint
-    user_id : bigint
-    --
-    model : varchar(100)
-    total_messages : integer
-    total_tokens : integer
-    usage_date : date
-    created_at : timestamp
-    updated_at : timestamp
+class Message_file {
+  id : bigint
+  message_id : bigint
+  --
+  filename : varchar(255)
+  path : varchar(255)
+  mime_type : varchar(100)
+  type : enum('image','document')
+  created_at : timestamp
+  updated_at : timestamp
 }
 
-users "1" --> "0..*" conversations : possède >
-users "1" --> "1" custom_instructions : configure >
-users "1" --> "0..*" user_model_usage : utilise >
-conversations "1" --> "0..*" messages : contient >
-messages "1" --> "0..*" message_files : attache >
+class User_model_usage {
+  id : bigint
+  user_id : bigint
+  --
+  model : varchar(100)
+  total_messages : integer
+  total_tokens : integer
+  usage_date : date
+  created_at : timestamp
+  updated_at : timestamp
+  UNIQUE(user_id, model, usage_date)
+}
+
+
+User "1" --> "0..*" Conversation : possede >
+User "1" --> "0..1" Custom_instruction : configure >
+User "1" --> "0..*" Agent : cree >
+User "1" --> "0..*" User_model_usage : utilise >
+Conversation "1" --> "0..*" Message : contient >
+Message "1" --> "0..*" Message_file : attache >
+Agent "1" --> "0..*" Conversation : guide >
 
 @enduml

@@ -18,23 +18,42 @@ class MessageController extends Controller
         $this->authorize('update', $conversation);
 
         $request->validate([
-            'content' => 'required|string',
+            'content' => 'nullable|string',
+            'images'  => 'nullable|array',
+            'images.*' => 'string',
         ]);
 
-        $conversation->messages()->create([
+        // Nécessite au moins un contenu ou une image
+        if (!$request->content && empty($request->images)) {
+            abort(422, 'Message vide');
+        }
+
+        // Sauvegarder le message utilisateur
+        $userMessage = $conversation->messages()->create([
             'role'    => 'user',
-            'content' => $request->content,
+            'content' => $request->content ?? '',
         ]);
 
+        // Sauvegarder les images liées au message
+        if ($request->images) {
+            foreach ($request->images as $imagePath) {
+                $userMessage->files()->create([
+                    'filename'  => basename($imagePath),
+                    'path'      => $imagePath,
+                    'mime_type' => 'image/jpeg',
+                    'type'      => 'image',
+                ]);
+            }
+        }
+
+        // Générer le titre au premier message
         if ($conversation->messages()->count() === 1) {
-            $title = $this->openRouter->generateTitle($request->content);
+            $title = $this->openRouter->generateTitle($request->content ?? 'Image');
             $conversation->update(['title' => $title]);
         }
 
-        $systemPrompt = null;
+        // Construire le system prompt
         $parts = [];
-
-        // Priorité 1 : Agent lié à la conversation
         $agent = $conversation->agent;
 
         if ($agent) {
@@ -42,9 +61,7 @@ class MessageController extends Controller
             if ($agent->context) $parts[] = $agent->context;
             if ($agent->response_style) $parts[] = $agent->response_style;
             if ($agent->language) $parts[] = "Réponds toujours en : " . $agent->language;
-        }
-        // Priorité 2 : Instructions personnalisées globales
-        elseif ($request->user()->customInstruction) {
+        } elseif ($request->user()->customInstruction) {
             $customInstruction = $request->user()->customInstruction;
             if ($customInstruction->is_active) {
                 if ($customInstruction->persona) $parts[] = $customInstruction->persona;
@@ -54,7 +71,6 @@ class MessageController extends Controller
             }
         }
 
-        // Instruction de base QuestMaster si aucune instruction définie
         if (empty($parts)) {
             $parts[] = "Tu es QuestMaster, un Maître de Jeu IA créatif et immersif. Tu narres des aventures épiques de jeu de rôle avec suspense et détails. Tu proposes toujours 2-3 choix d'actions au joueur à la fin de chaque réponse. Utilise des emojis pour enrichir l'ambiance (⚔️🐉🏰🗡️🔮🎲).";
         }
@@ -77,8 +93,12 @@ class MessageController extends Controller
                 'model_used' => $conversation->model,
             ]);
 
-            $tokensUsed = (int) (str_word_count($fullContent) * 1.3);
-            $this->openRouter->updateUsage($conversation, $tokensUsed);
+            try {
+                $tokensUsed = (int) (str_word_count($fullContent) * 1.3);
+                $this->openRouter->updateUsage($conversation, $tokensUsed);
+            } catch (\Exception $e) {
+                \Log::warning('updateUsage failed: ' . $e->getMessage());
+            }
 
             echo "data: " . json_encode([
                 'done'       => true,

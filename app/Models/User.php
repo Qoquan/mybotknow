@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
@@ -52,4 +53,10 @@ class User extends Authenticatable
     {
         return $this->hasMany(Agent::class);
     }
+    public function sharedConversations(): BelongsToMany
+    {
+        return $this->belongsToMany(Conversation::class, 'conversation_members')
+            ->withPivot('role', 'joined_at')
+            ->withTimestamps();
+}
 }

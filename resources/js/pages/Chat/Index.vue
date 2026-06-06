@@ -8,6 +8,7 @@ interface Conversation {
     title: string
     model: string
     updated_at: string
+    user_id: number
 }
 
 interface Model {
@@ -19,6 +20,7 @@ interface Model {
 
 const props = defineProps<{
     conversations: Conversation[]
+    sharedConversations: Conversation[]
     models: Model[]
 }>()
 
@@ -28,12 +30,8 @@ const showDeleteSuccess = ref(false)
 
 function createConversation() {
     isCreating.value = true
-    router.post('/conversations', {
-        model: selectedModel.value,
-    }, {
-        onFinish: () => {
-            isCreating.value = false
-        },
+    router.post('/conversations', { model: selectedModel.value }, {
+        onFinish: () => { isCreating.value = false },
     })
 }
 
@@ -41,7 +39,6 @@ function deleteConversation(id: number, e: Event) {
     e.preventDefault()
     e.stopPropagation()
     if (!confirm('Abandonner cette quête ?')) return
-
     router.delete(`/conversations/${id}`, {
         onSuccess: () => {
             showDeleteSuccess.value = true
@@ -51,10 +48,7 @@ function deleteConversation(id: number, e: Event) {
 }
 
 function formatDate(date: string) {
-    return new Date(date).toLocaleDateString('fr-FR', {
-        day: '2-digit',
-        month: 'short',
-    })
+    return new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
 }
 </script>
 
@@ -69,7 +63,7 @@ function formatDate(date: string) {
                     <h1 class="text-xl font-bold text-gray-900 dark:text-white epic:text-amber-300 flex items-center gap-2">
                         🎲 QuestMaster
                     </h1>
-                    <p class="text-xs text-gray-400 dark:text-gray-500 epic:text-amber-600 mt-0.5">
+                    <p class="text-xs text-gray-400 dark:text-gray-500 epic:text-amber-500 mt-0.5">
                         Ton Maître de Jeu IA
                     </p>
                 </div>
@@ -83,11 +77,7 @@ function formatDate(date: string) {
                         v-model="selectedModel"
                         class="w-full text-sm rounded-lg border border-gray-300 dark:border-gray-600 epic:border-amber-700 bg-white dark:bg-gray-700 epic:bg-amber-900/50 text-gray-900 dark:text-white epic:text-amber-200 px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:outline-none"
                     >
-                        <option
-                            v-for="model in models"
-                            :key="model.id"
-                            :value="model.id"
-                        >
+                        <option v-for="model in models" :key="model.id" :value="model.id">
                             {{ model.name }} — {{ model.description }}
                         </option>
                     </select>
@@ -107,7 +97,13 @@ function formatDate(date: string) {
 
                 <!-- Liste des quêtes -->
                 <nav class="flex-1 overflow-y-auto px-2 pb-4">
-                    <p v-if="conversations.length === 0" class="text-center text-sm text-gray-400 dark:text-gray-500 epic:text-amber-700 mt-8">
+
+                    <!-- Mes conversations -->
+                    <p class="text-xs font-medium text-gray-400 epic:text-amber-600 uppercase tracking-wide px-3 mb-2 mt-2">
+                        🗡️ Mes quêtes
+                    </p>
+
+                    <p v-if="conversations.length === 0" class="text-center text-sm text-gray-400 dark:text-gray-500 epic:text-amber-700 mt-4">
                         🗺️ Aucune quête en cours
                     </p>
 
@@ -120,7 +116,7 @@ function formatDate(date: string) {
                                 <p class="text-sm font-medium text-gray-900 dark:text-white epic:text-amber-200 truncate">
                                     {{ conv.title }}
                                 </p>
-                                <p class="text-xs text-gray-400 epic:text-amber-700 mt-0.5">
+                                <p class="text-xs text-gray-400 epic:text-amber-600 mt-0.5">
                                     {{ formatDate(conv.updated_at) }}
                                 </p>
                             </div>
@@ -132,6 +128,29 @@ function formatDate(date: string) {
                             </button>
                         </div>
                     </template>
+
+                    <!-- Conversations partagées -->
+                    <div v-if="sharedConversations.length > 0" class="mt-4">
+                        <p class="text-xs font-medium text-gray-400 epic:text-amber-600 uppercase tracking-wide px-3 mb-2">
+                            🔗 Partagées avec moi
+                        </p>
+                        <template v-for="conv in sharedConversations" :key="`shared-${conv.id}`">
+                            <div
+                                class="group flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 epic:hover:bg-amber-900/30 transition-colors mb-1 cursor-pointer"
+                                @click="router.visit(`/conversations/${conv.id}`)"
+                            >
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white epic:text-amber-200 truncate">
+                                        🔗 {{ conv.title }}
+                                    </p>
+                                    <p class="text-xs text-gray-400 epic:text-amber-600 mt-0.5">
+                                        {{ formatDate(conv.updated_at) }}
+                                    </p>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
                 </nav>
             </aside>
 
@@ -159,17 +178,9 @@ function formatDate(date: string) {
             </main>
 
             <!-- Toast suppression -->
-            <div
-                v-if="showDeleteSuccess"
-                class="fixed bottom-6 right-6 bg-green-700 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-3 z-50"
-            >
+            <div v-if="showDeleteSuccess" class="fixed bottom-6 right-6 bg-green-700 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-3 z-50">
                 <span>⚔️ Quête abandonnée</span>
-                <button
-                    @click="showDeleteSuccess = false"
-                    class="text-white hover:text-green-200 text-lg leading-none"
-                >
-                    &times;
-                </button>
+                <button @click="showDeleteSuccess = false" class="text-white hover:text-green-200 text-lg leading-none">&times;</button>
             </div>
 
         </div>
