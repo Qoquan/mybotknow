@@ -13,12 +13,12 @@ defineProps<{
 <template>
     <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
         <div class="text-center">
-            <div class="text-8xl mb-6">🤖</div>
+            <div class="text-8xl mb-6">🐉</div>
             <h1 class="text-5xl font-bold text-gray-900 dark:text-white mb-4">
-                MyBotKnows
+                QuestMaster AI
             </h1>
             <p class="text-xl text-gray-500 dark:text-gray-400 mb-10">
-                Ton assistant IA personnel propulsé par les meilleurs modèles du monde
+                Ton assistant IA personnel pour creer des quêtes épiques et vivre des aventures inoubliables !
             </p>
 
             <div class="flex gap-4 justify-center">

@@ -57,6 +57,40 @@ const uploadedImages = ref<{ path: string; url: string; filename: string }[]>([]
 const isUploading = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 
+// ── Système de dés ──
+const showDiceMenu = ref(false)
+
+function parseDiceCommand(text: string): string | null {
+    const match = text.trim().match(/^\/(\d+)?d(\d+)([+-]\d+)?$/i)
+    if (!match) return null
+
+    const count  = parseInt(match[1] ?? '1')
+    const faces  = parseInt(match[2])
+    const mod    = parseInt(match[3] ?? '0')
+
+    if (![4, 6, 8, 10, 12, 20, 100].includes(faces)) return null
+    if (count < 1 || count > 10) return null
+
+    const rolls  = Array.from({ length: count }, () => Math.floor(Math.random() * faces) + 1)
+    const total  = rolls.reduce((a, b) => a + b, 0) + mod
+
+    let result = `🎲 Lancer ${count}d${faces}`
+    if (mod !== 0) result += `${mod > 0 ? '+' : ''}${mod}`
+    if (count > 1) result += ` [${rolls.join(', ')}]`
+    result += ` = **${total}**`
+
+    if (faces === 20 && count === 1) {
+        if (rolls[0] === 20) result += ` 🌟 CRITIQUE !`
+        else if (rolls[0] === 1)  result += ` 💀 ÉCHEC CRITIQUE !`
+    }
+
+    return result
+}
+
+function insertDice(faces: number) {
+    input.value = `/d${faces}`
+    showDiceMenu.value = false
+}
 async function scrollToBottom() {
     await nextTick()
     if (messagesContainer.value) {
@@ -230,7 +264,15 @@ function formatDate(date: string) {
 function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault()
+        const diceResult = parseDiceCommand(input.value)
+        if (diceResult) {
+            input.value = diceResult
+        }
         sendMessage()
+    }
+    // Fermer le menu dés avec Escape
+    if (e.key === 'Escape') {
+        showDiceMenu.value = false
     }
 }
 
@@ -399,7 +441,7 @@ onMounted(() => { scrollToBottom() })
                             <!-- Message assistant -->
                             <div
                                 v-else
-                                class="max-w-2xl rounded-2xl rounded-bl-sm px-4 py-3 text-sm leading-relaxed bg-white dark:bg-gray-800 epic:bg-amber-800/50 text-gray-900 dark:text-white epic:text-amber-900 border border-gray-200 dark:border-gray-700 epic:border-amber-700/50"
+                                class="max-w-2xl rounded-2xl rounded-bl-sm px-4 py-3 text-sm leading-relaxed bg-white dark:bg-gray-800 epic:bg-amber-800/50 text-gray-900 dark:text-white epic:text-black border border-gray-200 dark:border-gray-700 epic:border-amber-700/50"
                             >
                                 <div v-html="renderMarkdown(message.content)" class="prose prose-sm dark:prose-invert max-w-none" />
                             </div>
@@ -417,7 +459,7 @@ onMounted(() => { scrollToBottom() })
                     <div v-if="isStreaming" class="flex justify-start">
                         <div class="flex flex-col items-start">
                             <span class="text-xs text-gray-400 epic:text-amber-500 mb-1 px-1">🎲 Maître de Jeu</span>
-                            <div class="max-w-2xl bg-white dark:bg-gray-800 epic:bg-amber-800/50 border border-gray-200 dark:border-gray-700 epic:border-amber-700/50 rounded-2xl rounded-bl-sm px-4 py-3 text-sm leading-relaxed text-gray-900 dark:text-white epic:text-amber-900">
+                            <div class="max-w-2xl bg-white dark:bg-gray-800 epic:bg-amber-600/50 border border-gray-200 dark:border-gray-700 epic:border-amber-700/50 rounded-2xl rounded-bl-sm px-4 py-3 text-sm leading-relaxed text-gray-900 dark:text-white epic:text-black-900">
                                 <div v-if="streamingContent" v-html="renderMarkdown(streamingContent)" class="prose prose-sm dark:prose-invert max-w-none" />
                                 <span v-else class="flex gap-1 items-center">
                                     <span class="w-2 h-2 bg-purple-400 epic:bg-amber-600 rounded-full animate-bounce" style="animation-delay: 0ms"></span>
@@ -430,7 +472,7 @@ onMounted(() => { scrollToBottom() })
                 </div>
 
                 <!-- Preview images -->
-                <div v-if="uploadedImages.length > 0" class="px-6 py-2 bg-white dark:bg-gray-800 epic:bg-amber-900/40 border-t border-gray-100 dark:border-gray-700 epic:border-amber-800/50 flex gap-2 flex-wrap">
+                <div v-if="uploadedImages.length > 0" class="px-6 py-2 bg-white dark:bg-gray-800 epic:bg-amber-600/40 border-t border-gray-100 dark:border-gray-700 epic:border-amber-800/50 flex gap-2 flex-wrap">
                     <div v-for="(img, index) in uploadedImages" :key="img.path" class="relative group">
                         <img :src="img.url" :alt="img.filename" class="h-16 w-16 object-cover rounded-lg border border-gray-200 dark:border-gray-600" />
                         <button
@@ -443,35 +485,102 @@ onMounted(() => { scrollToBottom() })
                 </div>
 
                 <!-- Input -->
-                <div class="bg-white dark:bg-gray-800 epic:bg-amber-900/40 border-t border-gray-200 dark:border-gray-700 epic:border-amber-800/50 px-6 py-4">
-                    <div class="flex gap-3 items-end">
-                        <input ref="fileInput" type="file" accept="image/jpeg,image/png,image/gif,image/webp" multiple class="hidden" @change="handleImageUpload" />
-                        <button
-                            @click="fileInput?.click()"
-                            :disabled="isStreaming || isUploading"
-                            class="flex-shrink-0 bg-gray-100 dark:bg-gray-700 epic:bg-amber-800/50 hover:bg-gray-200 dark:hover:bg-gray-600 epic:hover:bg-amber-700/50 text-gray-500 dark:text-gray-400 epic:text-amber-400 rounded-xl px-3 py-3 text-lg transition-colors disabled:opacity-50"
-                        >
-                            <span v-if="isUploading">⏳</span>
-                            <span v-else>🖼️</span>
-                        </button>
-                        <textarea
-                            v-model="input"
-                            @keydown="handleKeydown"
-                            :disabled="isStreaming"
-                            placeholder="Parle à ton Maître de Jeu... (Entrée pour agir, Maj+Entrée pour saut de ligne)"
-                            rows="1"
-                            class="flex-1 resize-none rounded-xl border border-gray-300 dark:border-gray-600 epic:border-amber-700 bg-gray-50 dark:bg-gray-700 epic:bg-amber-900/50 text-gray-900 dark:text-white epic:text-amber-100 placeholder:text-gray-400 epic:placeholder:text-amber-600 px-4 py-3 text-sm focus:ring-2 focus:ring-purple-500 epic:focus:ring-amber-500 focus:outline-none disabled:opacity-50"
-                        />
-                        <button
-                            @click="sendMessage"
-                            :disabled="isStreaming || (!input.trim() && uploadedImages.length === 0)"
-                            class="bg-purple-600 hover:bg-purple-700 epic:bg-amber-600 epic:hover:bg-amber-700 disabled:opacity-50 text-white rounded-xl px-5 py-3 text-sm font-bold transition-colors"
-                        >
-                            <span v-if="isStreaming">🎲</span>
-                            <span v-else>⚔️ Agir</span>
-                        </button>
-                    </div>
-                </div>
+                <!-- Input -->
+<div class="bg-white dark:bg-gray-800 epic:bg-amber-900/40 border-t border-gray-200 dark:border-gray-700 epic:border-amber-800/50 px-6 py-4 shrink-0">
+
+    <!-- Aide commandes dés -->
+    <div
+        v-if="input.startsWith('/')"
+        class="mb-2 bg-gray-50 dark:bg-gray-700 epic:bg-amber-900/50 rounded-xl border border-gray-200 dark:border-gray-600 epic:border-amber-700 p-3"
+    >
+        <p class="text-xs text-gray-500 dark:text-gray-400 epic:text-amber-500 font-medium mb-2">
+            🎲 Commandes de dés disponibles :
+        </p>
+        <div class="flex flex-wrap gap-2">
+            <button
+                v-for="faces in [4, 6, 8, 10, 12, 20, 100]"
+                :key="faces"
+                @click="input = `/d${faces}`"
+                class="text-xs bg-purple-100 dark:bg-purple-900/30 epic:bg-amber-700/30 text-purple-700 dark:text-purple-300 epic:text-amber-300 px-2 py-1 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-800/40 transition-colors font-mono"
+            >
+                /d{{ faces }}
+            </button>
+        </div>
+        <p class="text-xs text-gray-400 dark:text-gray-500 epic:text-amber-600 mt-2">
+            Exemples : /d20 · /d6 · /3d6 · /d20+5 · /2d8-1
+        </p>
+    </div>
+
+    <!-- Menu dés rapide -->
+    <div
+        v-if="showDiceMenu"
+        class="mb-2 bg-white dark:bg-gray-700 epic:bg-amber-900/50 rounded-xl border border-gray-200 dark:border-gray-600 epic:border-amber-700 p-3 shadow-lg"
+    >
+        <p class="text-xs text-gray-500 dark:text-gray-400 epic:text-amber-500 font-medium mb-2">
+            Lancer rapidement :
+        </p>
+        <div class="flex flex-wrap gap-2">
+            <button
+                v-for="faces in [4, 6, 8, 10, 12, 20, 100]"
+                :key="faces"
+                @click="insertDice(faces)"
+                class="text-sm bg-purple-600 epic:bg-amber-600 hover:bg-purple-700 epic:hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg transition-colors font-mono font-bold"
+            >
+                d{{ faces }}
+            </button>
+        </div>
+    </div>
+
+    <div class="flex gap-3 items-end">
+        <input
+            ref="fileInput"
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp"
+            multiple
+            class="hidden"
+            @change="handleImageUpload"
+        />
+
+        <!-- Bouton image -->
+        <button
+            @click="fileInput?.click()"
+            :disabled="isStreaming || isUploading"
+            class="flex-shrink-0 bg-gray-100 dark:bg-gray-700 epic:bg-amber-800/50 hover:bg-gray-200 dark:hover:bg-gray-600 epic:hover:bg-amber-700/50 text-gray-500 dark:text-gray-400 epic:text-amber-400 rounded-xl px-3 py-3 text-lg transition-colors disabled:opacity-50"
+            title="Joindre une image"
+        >
+            <span v-if="isUploading">⏳</span>
+            <span v-else>🖼️</span>
+        </button>
+
+        <!-- Bouton dés -->
+        <button
+            @click="showDiceMenu = !showDiceMenu"
+            :disabled="isStreaming"
+            class="flex-shrink-0 bg-gray-100 dark:bg-gray-700 epic:bg-amber-800/50 hover:bg-gray-200 dark:hover:bg-gray-600 epic:hover:bg-amber-700/50 text-gray-500 dark:text-gray-400 epic:text-amber-400 rounded-xl px-3 py-3 text-lg transition-colors disabled:opacity-50"
+            title="Lancer des dés"
+        >
+            🎲
+        </button>
+
+        <textarea
+            v-model="input"
+            @keydown="handleKeydown"
+            :disabled="isStreaming"
+            placeholder="Parle à ton Maître de Jeu... ou tape / pour lancer des dés"
+            rows="1"
+            class="flex-1 resize-none rounded-xl border border-gray-300 dark:border-gray-600 epic:border-amber-700 bg-gray-50 dark:bg-gray-700 epic:bg-amber-900/50 text-gray-900 dark:text-white epic:text-amber-100 placeholder:text-gray-400 epic:placeholder:text-amber-600 px-4 py-3 text-sm focus:ring-2 focus:ring-purple-500 epic:focus:ring-amber-500 focus:outline-none disabled:opacity-50"
+        />
+
+        <button
+            @click="sendMessage"
+            :disabled="isStreaming || (!input.trim() && uploadedImages.length === 0)"
+            class="bg-purple-600 hover:bg-purple-700 epic:bg-amber-600 epic:hover:bg-amber-700 disabled:opacity-50 text-white rounded-xl px-5 py-3 text-sm font-bold transition-colors"
+        >
+            <span v-if="isStreaming">🎲</span>
+            <span v-else>⚔️ Agir</span>
+        </button>
+    </div>
+</div>
 
             </main>
 

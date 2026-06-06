@@ -12,24 +12,36 @@ class ConversationShareController extends Controller
 {
     // Afficher la page de partage
     public function show(Request $request, Conversation $conversation): Response
-    {
-        $this->authorize('view', $conversation);
+{
+    $this->authorize('view', $conversation);
 
-        $conversation->load('members');
+    $members = $conversation->members()
+        ->get()
+        ->map(function ($user) {
+            return [
+                'id'        => $user->id,
+                'name'      => $user->name,
+                'email'     => $user->email,
+                'role'      => $user->pivot->role,
+                'joined_at' => $user->pivot->joined_at,
+            ];
+        });
 
-        return Inertia::render('Chat/Share', [
-            'conversation' => $conversation,
-            'members'      => $conversation->members()->with('conversationMembers')->get()->map(function ($user) use ($conversation) {
-                return [
-                    'id'        => $user->id,
-                    'name'      => $user->name,
-                    'email'     => $user->email,
-                    'role'      => $user->pivot->role,
-                    'joined_at' => $user->pivot->joined_at,
-                ];
-            }),
-        ]);
-    }
+    // Ajouter le propriétaire en premier
+    $owner = $conversation->user;
+    $membersList = collect([[
+        'id'        => $owner->id,
+        'name'      => $owner->name,
+        'email'     => $owner->email,
+        'role'      => 'owner',
+        'joined_at' => $conversation->created_at,
+    ]])->merge($members);
+
+    return Inertia::render('Chat/Share', [
+        'conversation' => $conversation,
+        'members'      => $membersList,
+    ]);
+}
 
     // Inviter un utilisateur
     public function invite(Request $request, Conversation $conversation)
