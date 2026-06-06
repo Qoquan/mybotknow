@@ -24,56 +24,56 @@ class AgentController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $request->validate([
-            'name'           => 'required|string|max:255',
-            'emoji'          => 'nullable|string|max:10',
-            'persona'        => 'nullable|string|max:2000',
-            'context'        => 'nullable|string|max:2000',
-            'response_style' => 'nullable|string|max:2000',
-            'language'       => 'nullable|string|max:10',
-            'model'          => 'required|string',
-            'is_default'     => 'boolean',
-        ]);
+{
+    $request->validate([
+        'name'           => 'required|string|max:255',
+        'emoji'          => 'nullable|string|max:10',
+        'persona'        => 'nullable|string|max:2000',
+        'context'        => 'nullable|string|max:2000',
+        'response_style' => 'nullable|string|max:2000',
+        'language'       => 'nullable|string|max:10',
+        'model'          => 'required|string',
+        'is_default'     => 'boolean',
+    ]);
 
-        // Si is_default, retirer le défaut des autres
-        if ($request->is_default) {
-            $request->user()->agents()->update(['is_default' => false]);
-        }
-
-        $agent = $request->user()->agents()->create($request->all());
-
-        return response()->json($agent);
+    if ($request->is_default) {
+        $request->user()->agents()->update(['is_default' => false]);
     }
+
+    $request->user()->agents()->create($request->all());
+
+    return redirect()->route('agents.index');
+}
+
 
     public function update(Request $request, Agent $agent)
-    {
-        $this->authorize('update', $agent);
+{
+    $this->authorize('update', $agent);
 
-        $request->validate([
-            'name'           => 'required|string|max:255',
-            'emoji'          => 'nullable|string|max:10',
-            'persona'        => 'nullable|string|max:2000',
-            'context'        => 'nullable|string|max:2000',
-            'response_style' => 'nullable|string|max:2000',
-            'language'       => 'nullable|string|max:10',
-            'model'          => 'required|string',
-            'is_default'     => 'boolean',
-        ]);
+    $request->validate([
+        'name'           => 'required|string|max:255',
+        'emoji'          => 'nullable|string|max:10',
+        'persona'        => 'nullable|string|max:2000',
+        'context'        => 'nullable|string|max:2000',
+        'response_style' => 'nullable|string|max:2000',
+        'language'       => 'nullable|string|max:10',
+        'model'          => 'required|string',
+        'is_default'     => 'boolean',
+    ]);
 
-        if ($request->is_default) {
-            $request->user()->agents()->update(['is_default' => false]);
-        }
-
-        $agent->update($request->all());
-
-        return response()->json($agent);
+    if ($request->is_default) {
+        $request->user()->agents()->update(['is_default' => false]);
     }
 
+    $agent->update($request->all());
+
+    return redirect()->route('agents.index');
+}
     public function destroy(Agent $agent)
-    {
-        $this->authorize('delete', $agent);
-        $agent->delete();
-        return response()->json(['success' => true]);
-    }
+{
+    $this->authorize('delete', $agent);
+    $agent->delete();
+    return redirect()->route('agents.index');
+}
+
 }
