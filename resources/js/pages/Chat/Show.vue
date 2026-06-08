@@ -56,6 +56,7 @@ const showDeleteSuccess = ref(false)
 const uploadedImages = ref<{ path: string; url: string; filename: string }[]>([])
 const isUploading = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
+const textareaRef = ref<HTMLTextAreaElement | null>(null)
 
 // ── Système de dés ──
 const showDiceMenu = ref(false)
@@ -181,6 +182,7 @@ async function sendMessage() {
             streamingContent.value = ''
         }, 60000)
 
+
         while (true) {
             const { done, value } = await reader.read()
 
@@ -225,6 +227,8 @@ async function sendMessage() {
                         streamingContent.value = ''
                         isStreaming.value = false
                         await scrollToBottom()
+                        await nextTick()
+                        textareaRef.value?.focus()
                     } else if (data.content) {
                         streamingContent.value += data.content
                         await scrollToBottom()
@@ -236,9 +240,11 @@ async function sendMessage() {
         }
     } catch (error) {
         console.error('Erreur streaming:', error)
-        isStreaming.value = false
-        streamingContent.value = ''
-    }
+            isStreaming.value = false
+            streamingContent.value = ''
+            await nextTick()
+            textareaRef.value?.focus()
+        }
 }
 
 function deleteConversation(id: number, e: Event) {
@@ -563,6 +569,7 @@ onMounted(() => { scrollToBottom() })
         </button>
 
         <textarea
+            ref="textareaRef"
             v-model="input"
             @keydown="handleKeydown"
             :disabled="isStreaming"
