@@ -18,7 +18,7 @@ skinparam classHeaderBackgroundColor #6B21A8
 skinparam classFontColor #FFFFFF
 
 class users {
-  PK  id : bigint
+  id : bigint
   --
   name : varchar(255)
   email : varchar(255)
@@ -32,9 +32,9 @@ class users {
 }
 
 class conversations {
-  PK  id : bigint
-  FK  user_id : bigint
-  FK  agent_id : bigint NULL
+  id : bigint
+  user_id : bigint
+  agent_id : bigint NULL
   --
   title : varchar(255)
   model : varchar(100)
@@ -44,8 +44,8 @@ class conversations {
 }
 
 class messages {
-  PK  id : bigint
-  FK  conversation_id : bigint
+  id : bigint
+  conversation_id : bigint
   --
   role : enum('user','assistant')
   content : longtext
@@ -56,8 +56,8 @@ class messages {
 }
 
 class custom_instructions {
-  PK  id : bigint
-  FK  user_id : bigint
+  id : bigint
+  user_id : bigint
   --
   persona : text
   context : text
@@ -69,8 +69,8 @@ class custom_instructions {
 }
 
 class agents {
-  PK  id : bigint
-  FK  user_id : bigint
+  id : bigint
+  user_id : bigint
   --
   name : varchar(255)
   emoji : varchar(10)
@@ -85,8 +85,8 @@ class agents {
 }
 
 class message_files {
-  PK  id : bigint
-  FK  message_id : bigint
+  id : bigint
+  message_id : bigint
   --
   filename : varchar(255)
   path : varchar(255)
@@ -97,8 +97,8 @@ class message_files {
 }
 
 class user_model_usage {
-  PK  id : bigint
-  FK  user_id : bigint
+  id : bigint
+  user_id : bigint
   --
   model : varchar(100)
   total_messages : integer
@@ -110,9 +110,9 @@ class user_model_usage {
 }
 
 class conversation_members {
-  PK  id : bigint
-  FK  conversation_id : bigint
-  FK  user_id : bigint
+  id : bigint
+  conversation_id : bigint
+  user_id : bigint
   --
   role : enum('owner','member')
   joined_at : timestamp
