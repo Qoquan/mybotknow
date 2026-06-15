@@ -1,12 +1,12 @@
-@startuml MyBotKnows - QuestMaster Database Schema
+@startuml QuestMaster - Diagramme de Classe
 
 hide methods
 hide stereotypes
 hide circle
 
 skinparam linetype ortho
-skinparam classBorderColor #888888
-skinparam classBackgroundColor #FFFFFF
+skinparam classBorderColor #6B21A8
+skinparam classBackgroundColor #FAFAFA
 skinparam classArrowColor #444444
 skinparam classFontSize 13
 skinparam classFontName Arial
@@ -17,8 +17,8 @@ skinparam padding 5
 skinparam classHeaderBackgroundColor #6B21A8
 skinparam classFontColor #FFFFFF
 
-class User {
-  id : bigint
+class users {
+  PK  id : bigint
   --
   name : varchar(255)
   email : varchar(255)
@@ -31,10 +31,10 @@ class User {
   updated_at : timestamp
 }
 
-class Conversation {
-  id : bigint
-  user_id : bigint
-  agent_id : bigint NULL
+class conversations {
+  PK  id : bigint
+  FK  user_id : bigint
+  FK  agent_id : bigint NULL
   --
   title : varchar(255)
   model : varchar(100)
@@ -43,9 +43,9 @@ class Conversation {
   updated_at : timestamp
 }
 
-class Message {
-  id : bigint
-  conversation_id : bigint
+class messages {
+  PK  id : bigint
+  FK  conversation_id : bigint
   --
   role : enum('user','assistant')
   content : longtext
@@ -55,9 +55,9 @@ class Message {
   updated_at : timestamp
 }
 
-class Custom_instruction {
-  id : bigint
-  user_id : bigint
+class custom_instructions {
+  PK  id : bigint
+  FK  user_id : bigint
   --
   persona : text
   context : text
@@ -68,9 +68,9 @@ class Custom_instruction {
   updated_at : timestamp
 }
 
-class Agent {
-  id : bigint
-  user_id : bigint
+class agents {
+  PK  id : bigint
+  FK  user_id : bigint
   --
   name : varchar(255)
   emoji : varchar(10)
@@ -84,9 +84,9 @@ class Agent {
   updated_at : timestamp
 }
 
-class Message_file {
-  id : bigint
-  message_id : bigint
+class message_files {
+  PK  id : bigint
+  FK  message_id : bigint
   --
   filename : varchar(255)
   path : varchar(255)
@@ -96,9 +96,9 @@ class Message_file {
   updated_at : timestamp
 }
 
-class User_model_usage {
-  id : bigint
-  user_id : bigint
+class user_model_usage {
+  PK  id : bigint
+  FK  user_id : bigint
   --
   model : varchar(100)
   total_messages : integer
@@ -109,13 +109,40 @@ class User_model_usage {
   UNIQUE(user_id, model, usage_date)
 }
 
+class conversation_members {
+  PK  id : bigint
+  FK  conversation_id : bigint
+  FK  user_id : bigint
+  --
+  role : enum('owner','member')
+  joined_at : timestamp
+  created_at : timestamp
+  updated_at : timestamp
+  UNIQUE(conversation_id, user_id)
+}
 
-User "1" --> "0..*" Conversation : possede >
-User "1" --> "0..1" Custom_instruction : configure >
-User "1" --> "0..*" Agent : cree >
-User "1" --> "0..*" User_model_usage : utilise >
-Conversation "1" --> "0..*" Message : contient >
-Message "1" --> "0..*" Message_file : attache >
-Agent "1" --> "0..*" Conversation : guide >
+' Relations
+users "1" --> "0..*" conversations : possede >
+users "1" --> "0..1" custom_instructions : configure >
+users "1" --> "0..*" agents : cree >
+users "1" --> "0..*" user_model_usage : utilise >
+users "1" --> "0..*" conversation_members : partage via >
+
+conversations "1" --> "0..*" messages : contient >
+conversations "1" --> "0..*" conversation_members : partage avec >
+
+messages "1" --> "0..*" message_files : attache >
+
+agents "1" --> "0..*" conversations : guide >
+
+note bottom of conversation_members
+  Table pivot pour le partage
+  de conversations entre utilisateurs
+end note
+
+note right of user_model_usage
+  Cle unique composite :
+  (user_id, model, usage_date)
+end note
 
 @enduml
